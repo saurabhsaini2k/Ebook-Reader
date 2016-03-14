@@ -35,7 +35,6 @@ public class MainActivity extends ActionBarActivity {
                 takeSpeechInput();
             }
         });
-
     }
 
 
@@ -76,6 +75,7 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+    // result of startActivityforResult
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
