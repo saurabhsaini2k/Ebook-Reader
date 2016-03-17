@@ -11,8 +11,7 @@
         android:text="Speak"
         android:id="@+id/bt_speak"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="52dp" />
+        android:layout_centerHorizontal="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -22,4 +21,33 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="92dp" />
+
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/lv_files"
+        android:layout_below="@+id/speech_text"
+        android:layout_marginTop="81dp"
+        android:layout_above="@+id/bt_speak"
+        android:listSelector="@color/material_blue_grey_800"/>
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next"
+        android:id="@+id/btnNext"
+        android:layout_alignBottom="@+id/speech_text"
+        android:layout_toLeftOf="@+id/bt_speak"
+        android:layout_toStartOf="@+id/bt_speak" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="select"
+        android:id="@+id/btnSelect"
+        android:layout_alignBottom="@+id/speech_text"
+        android:layout_toRightOf="@+id/bt_speak"
+        android:layout_toEndOf="@+id/bt_speak" />
 </RelativeLayout>
