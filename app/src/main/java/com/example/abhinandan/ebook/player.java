@@ -2,111 +2,85 @@ package com.example.abhinandan.ebook;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.os.Environment;
+import android.media.MediaPlayer;
+import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.util.Log;
-import android.util.Pair;
 import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
 
-public class MainActivity extends ActionBarActivity implements
+public class player extends ActionBarActivity implements
         GestureDetector.OnGestureListener,
         GestureDetector.OnDoubleTapListener{
 
-    Button bt_speak;
-    TextView speech_text,tvCurrentSelected;
-    ListView lv_files;
-    int curSelection=-1;
-    ArrayList< Pair<String,String> > filesInFolder; // contains name as pair.first and its path as pair.second
-    public GestureDetectorCompat mDetector;
+    Button btnPlay,btnPause;
+    TextView tvSong;
+    MediaPlayer mp;
+    String songName,songPath;
     MyApplication mObject;
+    public GestureDetectorCompat mDetector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        mObject=((MyApplication)this.getApplication());
-        bt_speak=(Button)findViewById(R.id.bt_speak);
-        speech_text=(TextView)findViewById((R.id.speech_text));
-        tvCurrentSelected=(TextView)findViewById(R.id.tvCurrentSelected);
-        lv_files=(ListView)findViewById(R.id.lv_files);
+        setContentView(R.layout.activity_player);
 
         mDetector = new GestureDetectorCompat(this,this);
-        mDetector.setIsLongpressEnabled(true); // gesture input for voice input
+        mDetector.setIsLongpressEnabled(true);
 
-        bt_speak.setOnClickListener(new View.OnClickListener() {
+        tvSong=(TextView)findViewById(R.id.tvSong);
+        btnPlay=(Button)findViewById(R.id.btnPlay);
+        mObject=((MyApplication)this.getApplication());
+        mp = mObject.getMediaPlayer();
+
+
+        Bundle extras=getIntent().getExtras();
+        songName=extras.getString("songName");
+        songPath=extras.getString("songPath");
+        tvSong.setText(songName);
+
+        playSong(songPath, songName);
+
+        btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                takeSpeechInput();
+                mObject.playPause();
             }
         });
-
-        // listview onclick listner
-        lv_files.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(view.getContext(),player.class);
-                intent.putExtra("songName",filesInFolder.get(position).first);
-                intent.putExtra("songPath",filesInFolder.get(position).second);
-                startActivity(intent);
-            }
-        });
-
-        fillListView();
-        nextSelection();
     }
 
-    // open player and play the selected audio file by calling the function
-    public void selectCurrentItem()
-    {
-        Intent intent = new Intent(this,player.class);
-        intent.putExtra("songName",filesInFolder.get(curSelection).first);
-        intent.putExtra("songPath",filesInFolder.get(curSelection).second);
-        startActivity(intent);
-    }
+    // starting the song initially
+    public void  playSong(String songPath,String songName){
+        // Play song
+        try {
 
-    // move selected counter to next item in audio file listview
-    public void nextSelection(){
-        curSelection++;
-        if(curSelection == filesInFolder.size())
-            curSelection=0;
+            mp.reset();
+            mp.setDataSource(songPath);
+            mp.prepare();
+            mp.start();
+            // Displaying Song title
+            tvSong.setText(songName);
 
-        tvCurrentSelected.setText(filesInFolder.get(curSelection).first);
-        // highlighting selected item in list view not working
-//        lv_files.requestFocusFromTouch();
-//        lv_files.setSelection(curSelection);
-//        lv_files.requestFocus();
-    }
-
-    // fill listview with audio files in folder ebook in sd card
-    public  void fillListView(){
-        String sd_path= Environment.getExternalStorageDirectory().getAbsolutePath();
-        Log.e("","sd path" + sd_path);
-        filesInFolder = FileCrawler.GetFiles(sd_path+"/ebook");
-
-        ArrayList<String> fileName= new ArrayList<String>();
-
-        for( Pair<String,String> p : filesInFolder)
-            fileName.add(p.first);
-
-        lv_files.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,fileName));
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // call this function whenever speech input is required
@@ -116,14 +90,17 @@ public class MainActivity extends ActionBarActivity implements
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT,"Say something");
 
-        if(mObject.getMediaPlayer().isPlaying())
-            mObject.getMediaPlayer().pause();
-
         try{
-            startActivityForResult(intent,100);
+            if(mObject.getMediaPlayer().isPlaying())
+            {
+                mObject.getMediaPlayer().pause(); // pause audio during speech input
+                startActivityForResult(intent,100);   // already playing
+            }else{
+                startActivityForResult(intent,101);   //Not playing
+            }
 
         }catch (ActivityNotFoundException e){
-            Toast.makeText(getApplicationContext(),"Speech support not found",Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Speech support not found", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -133,28 +110,58 @@ public class MainActivity extends ActionBarActivity implements
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-            case 100: {
+            case 100: { // initially playing
                 if(resultCode==RESULT_OK && data!=null)
                 {
-                    ArrayList<String> result = data
-                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    speech_text.setText(result.get(0));
-
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     String command=result.get(0);
 
                     switch(command)
                     {
-                        case "next":
-                            nextSelection();
+                        case "play":
+                            mObject.playPause();
                             break;
-                        case "select":
-                            selectCurrentItem();
+                        case "pause":
+                            // remain paused
+                            break;
+                        case "stop":
+                            //remain paused
+                            break;
+                        case "back":
+                            //play it and finish activity
+                            mObject.playPause();
+                            finish();
                             break;
                         default:
                     }
                 }
             }
-            mObject.playPause();
+            break;
+            case 101:{ // initially not playing
+                if(resultCode==RESULT_OK && data!=null)
+                {
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    String command=result.get(0);
+
+                    switch(command)
+                    {
+                        case "play":
+                            mObject.playPause();
+                            break;
+                        case "pause":
+                            // remain paused
+                            break;
+                        case "stop":
+                            //remain paused
+                            break;
+                        case "back":
+                            //remain paused and finish activity
+                            finish();
+                            break;
+                        default:
+                    }
+                }
+            }
             break;
         }
     }
@@ -167,7 +174,7 @@ public class MainActivity extends ActionBarActivity implements
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e) {
-        Log.d("","Here ..stc....................................................");
+        Log.d("", "Here ..stc....................................................");
         return true;
     }
 
@@ -206,7 +213,6 @@ public class MainActivity extends ActionBarActivity implements
         return true;
     }
 
-
     // only this gesture is active and initiate speech input
     @Override
     public void onLongPress(MotionEvent e) {
@@ -218,11 +224,10 @@ public class MainActivity extends ActionBarActivity implements
         return true;
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_player, menu);
         return true;
     }
 
@@ -239,5 +244,10 @@ public class MainActivity extends ActionBarActivity implements
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }
