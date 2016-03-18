@@ -116,14 +116,17 @@ public class MainActivity extends ActionBarActivity implements
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT,"Say something");
 
-        if(mObject.getMediaPlayer().isPlaying())
-            mObject.getMediaPlayer().pause();
-
         try{
-            startActivityForResult(intent,100);
+            if(mObject.getMediaPlayer().isPlaying())
+            {
+                mObject.getMediaPlayer().pause(); // pause audio during speech input
+                startActivityForResult(intent,100);   // already playing
+            }else{
+                startActivityForResult(intent,101);   //Not playing
+            }
 
         }catch (ActivityNotFoundException e){
-            Toast.makeText(getApplicationContext(),"Speech support not found",Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Speech support not found", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -133,13 +136,45 @@ public class MainActivity extends ActionBarActivity implements
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-            case 100: {
+            case 100: { // initially playing
                 if(resultCode==RESULT_OK && data!=null)
                 {
-                    ArrayList<String> result = data
-                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    speech_text.setText(result.get(0));
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    String command=result.get(0);
 
+                    switch(command)
+                    {
+                        case "next":
+                            nextSelection();
+                            mObject.playPause();
+                            break;
+                        case "select":
+                            selectCurrentItem();
+                            mObject.playPause();
+                            break;
+                        case "play":
+                            mObject.playPause();
+                            break;
+                        case "pause":
+                            // remain paused
+                            break;
+                        case "stop":
+                            //remain paused
+                            break;
+                        case "back":
+                            //play it and finish activity
+                            mObject.playPause();
+                            finish();
+                            break;
+                        default:
+                    }
+                }
+            }
+            break;
+            case 101:{ // initially not playing
+                if(resultCode==RESULT_OK && data!=null)
+                {
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     String command=result.get(0);
 
                     switch(command)
@@ -150,11 +185,23 @@ public class MainActivity extends ActionBarActivity implements
                         case "select":
                             selectCurrentItem();
                             break;
+                        case "play":
+                            mObject.playPause();
+                            break;
+                        case "pause":
+                            // remain paused
+                            break;
+                        case "stop":
+                            //remain paused
+                            break;
+                        case "back":
+                            //remain paused and finish activity
+                            finish();
+                            break;
                         default:
                     }
                 }
             }
-            mObject.playPause();
             break;
         }
     }
