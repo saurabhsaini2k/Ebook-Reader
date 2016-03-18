@@ -14,4 +14,16 @@ public class MyApplication extends Application {
     {
         return mp;
     }
+
+    public void playPause(){
+        // check for already playing
+        if(mp.isPlaying()){
+            if(mp!=null)
+                mp.pause();
+        }else{
+            // Resume song
+            if(mp!=null)
+                mp.start();
+        }
+    }
 }
