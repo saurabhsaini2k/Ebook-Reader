@@ -3,7 +3,9 @@ package com.example.abhinandan.ebook;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Environment;
+import android.os.Handler;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -32,6 +34,10 @@ public class MainActivity extends ActionBarActivity implements
     Button bt_speak;
     TextView speech_text,tvCurrentSelected;
     ListView lv_files;
+    private static int SPLASH_TIME_OUT = 6000;
+
+    TextToSpeech textToSpeech;
+
     int curSelection=-1;
     ArrayList< Pair<String,String> > filesInFolder; // contains name as pair.first and its path as pair.second
     public GestureDetectorCompat mDetector;
@@ -41,6 +47,15 @@ public class MainActivity extends ActionBarActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int i) {
+                if(i!=TextToSpeech.ERROR){
+                    textToSpeech.setLanguage(Locale.UK);
+                }
+            }
+        });
 
         mObject=((MyApplication)this.getApplication());
         bt_speak=(Button)findViewById(R.id.bt_speak);
@@ -54,7 +69,11 @@ public class MainActivity extends ActionBarActivity implements
         bt_speak.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                takeSpeechInput();
+                // takeSpeechInput();
+                textToSpeech.speak("Hi Abhinandan!.", TextToSpeech.QUEUE_FLUSH, null);
+
+                nextSelection();
+
             }
         });
 
@@ -62,15 +81,16 @@ public class MainActivity extends ActionBarActivity implements
         lv_files.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(view.getContext(),player.class);
-                intent.putExtra("songName",filesInFolder.get(position).first);
-                intent.putExtra("songPath",filesInFolder.get(position).second);
+                Intent intent = new Intent(view.getContext(), player.class);
+                intent.putExtra("songName", filesInFolder.get(position).first);
+                intent.putExtra("songPath", filesInFolder.get(position).second);
                 startActivity(intent);
             }
         });
 
         fillListView();
-        nextSelection();
+        //nextSelection();
+
     }
 
     // open player and play the selected audio file by calling the function
@@ -89,16 +109,29 @@ public class MainActivity extends ActionBarActivity implements
             curSelection=0;
 
         tvCurrentSelected.setText(filesInFolder.get(curSelection).first);
+
+
+
+        speak(filesInFolder.get(curSelection).first);
+
         // highlighting selected item in list view not working
 //        lv_files.requestFocusFromTouch();
 //        lv_files.setSelection(curSelection);
 //        lv_files.requestFocus();
     }
 
+    public void speak(String textToSpeak){
+        textToSpeech.speak(textToSpeak,TextToSpeech.QUEUE_FLUSH,null);
+
+
+
+        takeSpeechInput();
+    }
+
     // fill listview with audio files in folder ebook in sd card
     public  void fillListView(){
         String sd_path= Environment.getExternalStorageDirectory().getAbsolutePath();
-        Log.e("","sd path" + sd_path);
+        Log.i("","sd path"+sd_path);
         filesInFolder = FileCrawler.GetFiles(sd_path+"/ebook");
 
         ArrayList<String> fileName= new ArrayList<String>();
@@ -106,7 +139,7 @@ public class MainActivity extends ActionBarActivity implements
         for( Pair<String,String> p : filesInFolder)
             fileName.add(p.first);
 
-        lv_files.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,fileName));
+        lv_files.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,fileName));
     }
 
     // call this function whenever speech input is required
@@ -207,26 +240,26 @@ public class MainActivity extends ActionBarActivity implements
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event){
+    public boolean onTouchEvent(MotionEvent event) {
         this.mDetector.onTouchEvent(event);
         return super.onTouchEvent(event);
     }
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e) {
-        Log.d("","Here ..stc....................................................");
+        Log.d("", "Here ..stc....................................................");
         return true;
     }
 
     @Override
     public boolean onDoubleTap(MotionEvent e) {
-        Log.d("","Here .......dtc...............................................");
+        Log.d("", "Here .......dtc...............................................");
         return true;
     }
 
     @Override
     public boolean onDoubleTapEvent(MotionEvent e) {
-        Log.d("","Here .........dte.............................................");
+        Log.d("", "Here .........dte.............................................");
         return true;
     }
 
@@ -238,7 +271,7 @@ public class MainActivity extends ActionBarActivity implements
 
     @Override
     public void onShowPress(MotionEvent e) {
-        Log.d("","Here ...........sp...........................................");
+        Log.d("", "Here ...........sp...........................................");
 
     }
 
