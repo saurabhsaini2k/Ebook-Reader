@@ -27,20 +27,17 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 
-public class MainActivity extends ActionBarActivity implements
-        GestureDetector.OnGestureListener,
-        GestureDetector.OnDoubleTapListener{
+public class MainActivity extends ActionBarActivity{
 
     Button bt_speak;
     TextView speech_text,tvCurrentSelected;
-    ListView lv_files;
-    private static int SPLASH_TIME_OUT = 6000;
-
+//    ListView lv_files;
     TextToSpeech textToSpeech;
+    View view;
 
     int curSelection=-1;
     ArrayList< Pair<String,String> > filesInFolder; // contains name as pair.first and its path as pair.second
-    public GestureDetectorCompat mDetector;
+    public OnSwipeTouchListener mDetector;
     MyApplication mObject;
 
     @Override
@@ -56,15 +53,44 @@ public class MainActivity extends ActionBarActivity implements
                 }
             }
         });
-
+        view=(View)findViewById(R.id.viewMain);
         mObject=((MyApplication)this.getApplication());
         bt_speak=(Button)findViewById(R.id.bt_speak);
         speech_text=(TextView)findViewById((R.id.speech_text));
         tvCurrentSelected=(TextView)findViewById(R.id.tvCurrentSelected);
-        lv_files=(ListView)findViewById(R.id.lv_files);
+//        lv_files=(ListView)findViewById(R.id.lv_files);
 
-        mDetector = new GestureDetectorCompat(this,this);
-        mDetector.setIsLongpressEnabled(true); // gesture input for voice input
+        view.setOnTouchListener(new OnSwipeTouchListener(this){
+            public void onSwipeRight() {
+                Log.e("check :","right");
+                nextSelection();
+            }
+
+            public void onSwipeLeft() {
+                Log.e("check :","left");
+                prevSelection();
+            }
+
+            public void onSwipeTop() {
+                Log.e("check :","top");
+                exitApp();
+            }
+
+            public void onSwipeBottom() {
+                Log.e("check :","down");
+                curSelection();
+            }
+
+            public void onDoubleTap1(){
+                Log.e("check :","double tap");
+
+            }
+
+            public void onLongPress1(){
+                Log.e("check :","long press");
+                takeSpeechInput();
+            }
+        });
 
         bt_speak.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,15 +104,15 @@ public class MainActivity extends ActionBarActivity implements
         });
 
         // listview onclick listner
-        lv_files.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(view.getContext(), player.class);
-                intent.putExtra("songName", filesInFolder.get(position).first);
-                intent.putExtra("songPath", filesInFolder.get(position).second);
-                startActivity(intent);
-            }
-        });
+//        lv_files.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                Intent intent = new Intent(view.getContext(), player.class);
+//                intent.putExtra("songName", filesInFolder.get(position).first);
+//                intent.putExtra("songPath", filesInFolder.get(position).second);
+//                startActivity(intent);
+//            }
+//        });
 
         fillListView();
         //nextSelection();
@@ -110,8 +136,6 @@ public class MainActivity extends ActionBarActivity implements
 
         tvCurrentSelected.setText(filesInFolder.get(curSelection).first);
 
-
-
         speak(filesInFolder.get(curSelection).first);
 
         // highlighting selected item in list view not working
@@ -120,12 +144,23 @@ public class MainActivity extends ActionBarActivity implements
 //        lv_files.requestFocus();
     }
 
+    public void prevSelection(){
+        curSelection--;
+        if(curSelection < 0)
+            curSelection=filesInFolder.size()-1;
+        tvCurrentSelected.setText(filesInFolder.get(curSelection).first);
+        speak(filesInFolder.get(curSelection).first);
+    }
+
+    public void curSelection()    {speak(filesInFolder.get(curSelection).first);}
+
     public void speak(String textToSpeak){
         textToSpeech.speak(textToSpeak,TextToSpeech.QUEUE_FLUSH,null);
+    }
 
-
-
-        takeSpeechInput();
+    public void exitApp(){
+        textToSpeech.stop();
+        finish();
     }
 
     // fill listview with audio files in folder ebook in sd card
@@ -139,7 +174,7 @@ public class MainActivity extends ActionBarActivity implements
         for( Pair<String,String> p : filesInFolder)
             fileName.add(p.first);
 
-        lv_files.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,fileName));
+//        lv_files.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,fileName));
     }
 
     // call this function whenever speech input is required
@@ -237,65 +272,6 @@ public class MainActivity extends ActionBarActivity implements
             }
             break;
         }
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        this.mDetector.onTouchEvent(event);
-        return super.onTouchEvent(event);
-    }
-
-    @Override
-    public boolean onSingleTapConfirmed(MotionEvent e) {
-        Log.d("", "Here ..stc....................................................");
-        return true;
-    }
-
-    @Override
-    public boolean onDoubleTap(MotionEvent e) {
-        Log.d("", "Here .......dtc...............................................");
-        return true;
-    }
-
-    @Override
-    public boolean onDoubleTapEvent(MotionEvent e) {
-        Log.d("", "Here .........dte.............................................");
-        return true;
-    }
-
-    @Override
-    public boolean onDown(MotionEvent e) {
-        Log.d("","Here ........od..............................................");
-        return true;
-    }
-
-    @Override
-    public void onShowPress(MotionEvent e) {
-        Log.d("", "Here ...........sp...........................................");
-
-    }
-
-    @Override
-    public boolean onSingleTapUp(MotionEvent e) {
-        Log.d("","Here ............stu..........................................");
-        return true;
-    }
-
-    @Override
-    public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-        return true;
-    }
-
-
-    // only this gesture is active and initiate speech input
-    @Override
-    public void onLongPress(MotionEvent e) {
-        takeSpeechInput();
-    }
-
-    @Override
-    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-        return true;
     }
 
 
